@@ -1,65 +1,84 @@
-import Image from "next/image";
+"use client"; // This tells Next.js this page is interactive
+import { useState } from 'react';
 
-export default function Home() {
+export default function HaircutApp() {
+  const [image, setImage] = useState<string | null>(null);
+  const [result, setResult] = useState<any>(null);
+
+  // 1. Function to handle image upload
+  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImage(URL.createObjectURL(file));
+    }
+  };
+
+  // 2. Logic to "Analyze" (The Matchmaker)
+  const analyzeFace = async () => {
+
+    console.log("Checking Key:", process.env.NEXT_PUBLIC_FACEPP_KEY);
+
+    if (!image) return alert("Please upload a photo first!");
+
+    try {
+    // For now, we simulate an AI finding a "Square" face
+    const formData = new FormData();
+    formData.append('api_key', process.env.NEXT_PUBLIC_FACEPP_KEY!);
+    formData.append('api_secret', process.env.NEXT_PUBLIC_FACEPP_SECRET!);
+    formData.append('return_attributes', 'face_shape');
+
+    const blob = await fetch(image).then(r => r.blob());
+    formData.append('image_file', blob);
+
+    const response = await fetch('https://api-cn.faceplusplus.com/facepp/v3/detect', {
+      method: 'POST',
+      body: formData
+    });
+
+    const data = await response.json();
+
+    const detectedShape = data.faces[0].attributes.face_shape.shape;
+    
+    const styles: any = {
+      square: { name: "Textured Quiff", desc: "Short sides with volume on top softens your jawline." },
+      oval: { name: "Classic Side Part", desc: "Anything works for you, but this looks the sharpest." },
+      round: { name: "Pompadour", desc: "Height on top makes your face appear longer." },
+      heart: { name: "Long Fringe", desc: "Adds width to your forehead to balance a narrow chin."}
+    };
+
+    setResult(styles[detectedShape] || { name: "Cool Cut", desc: "The AI says you have a unique look!" });
+
+  } catch (error) {
+    console.error("AI Error:", error);
+    alert("The AI is taking a break. Check your API keys!");
+  }
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <main className="p-10 flex flex-col items-center gap-6">
+      <h1 className="text-3xl font-bold text-blue-600">AI Haircut Guide</h1>
+      
+      {/* Upload Section */}
+      <input type="file" onChange={handleUpload} className="border p-2" />
+      
+      {/* Preview Image */}
+      {image && <img src={image} alt="User face" className="w-64 h-64 object-cover rounded-lg" />}
+
+      {/* Action Button */}
+      <button 
+        onClick={analyzeFace}
+        className="bg-black text-white px-6 py-2 rounded-full hover:bg-gray-800"
+      >
+        Find My Style
+      </button>
+
+      {/* Results Section */}
+      {result && (
+        <div className="mt-6 p-4 border-2 border-green-500 rounded-xl text-center">
+          <h2 className="text-2xl font-bold">{result.name}</h2>
+          <p className="text-gray-600">{result.desc}</p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+      )}
+    </main>
   );
 }
