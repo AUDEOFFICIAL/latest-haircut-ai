@@ -30,7 +30,7 @@ export default function HaircutApp() {
     const blob = await fetch(image).then(r => r.blob());
     formData.append('image_file', blob);
 
-    const response = await fetch('https://api-cn.faceplusplus.com/facepp/v3/detect', {
+    const response = await fetch('/api/analyze', {
       method: 'POST',
       body: formData
     });
